@@ -121,3 +121,72 @@ def test_parser_fail_empty_tokens() -> None:
     with pytest.raises(Exception, match=r'Parsing error: empty input tokens'):
         parse(tokenize(''))
     return None
+
+def test_parser_if_expression() -> None:
+    assert parse(tokenize('if a then b + c else x * y')) == ast.IfExpression(
+        condition=ast.Identifier(name="a"),
+        then_clause=ast.BinaryOp(
+            left=ast.Identifier(name="b"),
+            op="+",
+            right=ast.Identifier(name="c")
+        ),
+        else_clause=ast.BinaryOp(
+            left=ast.Identifier(name="x"),
+            op="*",
+            right=ast.Identifier(name="y")
+        )
+    )
+    return None
+
+def test_parser_if_expression_no_else() -> None:
+    assert parse(tokenize('if a then b + c')) == ast.IfExpression(
+        condition=ast.Identifier(name="a"),
+        then_clause=ast.BinaryOp(
+            left=ast.Identifier(name="b"),
+            op="+",
+            right=ast.Identifier(name="c")
+        ),
+        else_clause=None
+    )
+    return None
+
+def test_parser_if_as_part_of_other_expression() -> None:
+    assert parse(tokenize('1 + if true then 2 else 3')) == ast.BinaryOp(
+        left=ast.Literal(value=1),
+        op='+',
+        right=ast.IfExpression(
+            condition=ast.Literal(value=True),
+            then_clause=ast.Literal(value=2),
+            else_clause=ast.Literal(value=3)
+        )
+    )
+    return None
+
+def test_parser_nested_if() -> None:
+    assert parse(tokenize('1 + if if b then c + 1 else d + 3 then 2')) == ast.BinaryOp(
+        left=ast.Literal(value=1),
+        op='+',
+        right=ast.IfExpression(
+            condition=ast.IfExpression(
+                condition=ast.Identifier(name="b"),
+                then_clause=ast.BinaryOp(
+                    left=ast.Identifier(name="c"),
+                    op="+",
+                    right=ast.Literal(value=1)
+                    ),
+                else_clause=ast.BinaryOp(
+                    left=ast.Identifier(name="d"),
+                    op="+",
+                    right=ast.Literal(value=3)
+                    ),
+            ),
+            then_clause=ast.Literal(value=2),
+            else_clause=None
+        )
+    )
+    return None
+
+def test_parser_if_expression_fail() -> None:
+    with pytest.raises(Exception, match=r'Parsing error at 1:16'):
+        parse(tokenize('if a then then b + c else x * y'))
+    return None

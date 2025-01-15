@@ -20,7 +20,7 @@ class Location:
 @dataclass(frozen=True)
 class Token:
     loc: Union[Location, L]
-    type: Literal["int_literal", "identifier", "punctuation", "end"]
+    type: Literal["int_literal", "identifier", "punctuation", "boolean", "end"]
     text: str
 
     def __eq__(self, arg: object) -> bool:
@@ -33,6 +33,7 @@ class Token:
         )
 
 def tokenize(source_code: str) -> list[Token]:
+    boolean_re = re.compile(r'true|false')
     ident_re = re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*')
     int_re = re.compile(r'[0-9]+')
     newline_re = re.compile(r'\n')
@@ -47,6 +48,17 @@ def tokenize(source_code: str) -> list[Token]:
     tokens: list[Token] = []
 
     while pos < len(source_code):
+        match = boolean_re.match(source_code, pos)
+        if match:
+            tokens.append(Token(
+                loc = Location(pos=pos, line=line, column=column),
+                type="boolean",
+                text=source_code[pos:match.end()]
+            ))
+            column += match.end() - pos
+            pos = match.end()
+            continue
+
         match = ident_re.match(source_code, pos)
         if match:
             tokens.append(Token(
