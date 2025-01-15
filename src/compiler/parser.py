@@ -58,7 +58,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 operator,
                 right
             )
-        if peek().type == "end" or peek().text in [')', 'then', 'else']:
+        if peek().type == "end" or peek().text in [')', 'then', 'else', ',']:
             return left
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
@@ -94,6 +94,18 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             else_clause = None
         return ast.IfExpression(condition, then_clause, else_clause)
+    
+    def parse_function(ident: ast.Identifier) -> ast.Expression:
+        args = []
+        consume('(')
+        while peek().text != ')':
+            args.append(parse_expression())
+            if peek().text == ',':
+                consume(',')
+                if peek().text == ')':
+                    raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}: expected an argument')
+        consume(')')
+        return ast.Function(name=ident.name, arguments=args)
 
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
@@ -103,7 +115,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
-            return parse_identifier()
+            ident = parse_identifier()
+            if peek().text == '(':
+                return parse_function(ident=ident)
+            return ident
         elif peek().type == 'boolean':
             return parse_boolean()
         else:

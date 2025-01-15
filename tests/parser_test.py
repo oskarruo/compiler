@@ -190,3 +190,27 @@ def test_parser_if_expression_fail() -> None:
     with pytest.raises(Exception, match=r'Parsing error at 1:16'):
         parse(tokenize('if a then then b + c else x * y'))
     return None
+
+def test_parser_function() -> None:
+    assert parse(tokenize('f(x, y + z)')) == ast.Function(
+        name='f',
+        arguments=[
+            ast.Identifier(name="x"),
+            ast.BinaryOp(
+                left=ast.Identifier(name='y'),
+                op='+',
+                right=ast.Identifier(name='z')
+            )
+        ]
+    )
+    return None
+
+def test_parser_function_arguments_fail() -> None:
+    with pytest.raises(Exception, match=r'Parsing error at 1:5: expected an argument'):
+        parse(tokenize('f(x,)'))
+    return None
+
+def test_parser_function_parentheses_fail() -> None:
+    with pytest.raises(Exception, match=r'Parsing error at 1:4'):
+        parse(tokenize('f(x,'))
+    return None
