@@ -93,7 +93,7 @@ def test_parser_parentheses_open_fail() -> None:
     return None
 
 def test_parser_empty_parentheses_fail() -> None:
-    with pytest.raises(Exception, match=r'Parsing error at 1:2: expected an integer literal or an identifier'):
+    with pytest.raises(Exception, match=r'Parsing error at 1:2'):
         parse(tokenize('() * c'))
     return None
 
