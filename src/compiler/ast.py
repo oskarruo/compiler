@@ -28,3 +28,20 @@ class IfExpression(Expression):
 class Function(Expression):
     name: str
     arguments: list[Expression]
+
+@dataclass
+class BinaryComp(Expression):
+    left: Expression
+    op: str
+    right: Expression
+
+@dataclass
+class BinaryLogical(Expression):
+    left: Expression
+    op: str
+    right: Expression
+
+@dataclass
+class Assignement(Expression):
+    left: Expression
+    right: Expression

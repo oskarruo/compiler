@@ -214,3 +214,90 @@ def test_parser_function_parentheses_fail() -> None:
     with pytest.raises(Exception, match=r'Parsing error at 1:4'):
         parse(tokenize('f(x,'))
     return None
+
+def test_parser_remainder() -> None:
+    assert parse(tokenize('a % 5')) == ast.BinaryOp(
+        left=ast.Identifier(name='a'),
+        op='%',
+        right=ast.Literal(value=5)
+    )
+    return None
+
+def test_parser_bool_opers_eq_neq() -> None:
+    assert parse(tokenize('a == 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='==',
+        right=ast.Literal(value=5)
+    )
+    assert parse(tokenize('a != 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='!=',
+        right=ast.Literal(value=5)
+    )
+    return None
+
+def test_parser_rest_bool_opers() -> None:
+    assert parse(tokenize('a < 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='<',
+        right=ast.Literal(value=5)
+    )
+    assert parse(tokenize('a <= 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='<=',
+        right=ast.Literal(value=5)
+    )
+    assert parse(tokenize('a > 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='>',
+        right=ast.Literal(value=5)
+    )
+    assert parse(tokenize('a >= 5')) == ast.BinaryComp(
+        left=ast.Identifier(name='a'),
+        op='>=',
+        right=ast.Literal(value=5)
+    )
+    return None
+
+def test_parser_bool_log_opers() -> None:
+    assert parse(tokenize('a and b')) == ast.BinaryLogical(
+        left=ast.Identifier(name='a'),
+        op='and',
+        right=ast.Identifier(name='b')
+    )
+    return None
+
+def test_new_opers_with_other() -> None:
+    assert parse(tokenize('if a or (b - 5 < 5) then c % 3')) == ast.IfExpression(
+        condition=ast.BinaryLogical(
+            left=ast.Identifier(name='a'),
+            op='or',
+            right=ast.BinaryComp(
+                left=ast.BinaryOp(
+                    left=ast.Identifier(name='b'),
+                    op='-',
+                    right=ast.Literal(value=5)
+                ),
+                op='<',
+                right=ast.Literal(value=5)
+            )
+        ),
+        then_clause=ast.BinaryOp(
+            left=ast.Identifier(name='c'),
+            op='%',
+            right=ast.Literal(value=3)
+        ),
+        else_clause=None
+    )
+    return None
+
+def test_parser_assignement() -> None:
+    print(parse(tokenize('a=b=c')))
+    assert parse(tokenize('a=b=c')) == ast.Assignement(
+        left=ast.Identifier(name='a'),
+        right=ast.Assignement(
+            left=ast.Identifier(name='b'),
+            right=ast.Identifier(name='c')
+        )
+    )
+    return None
