@@ -122,7 +122,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif peek().type == 'boolean':
             return parse_boolean()
         else:
-            raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}: expected an integer literal or an identifier')
+            raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
     
     result = parse_expression()
 
