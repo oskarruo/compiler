@@ -8,6 +8,7 @@ class L:
 
 @dataclass(frozen=True)
 class Location:
+    pos: int
     line: int
     column: int
 
@@ -44,7 +45,7 @@ def tokenize(source_code: str) -> list[Token]:
         match = ident_re.match(source_code, pos)
         if match:
             tokens.append(Token(
-                loc = Location(line=line, column=column),
+                loc = Location(pos=pos, line=line, column=column),
                 type="identifier",
                 text=source_code[pos:match.end()]
             ))
@@ -55,7 +56,7 @@ def tokenize(source_code: str) -> list[Token]:
         match = int_re.match(source_code, pos)
         if match:
             tokens.append(Token(
-                loc = Location(line=line, column=column),
+                loc = Location(pos=pos, line=line, column=column),
                 type="int_literal",
                 text=source_code[pos:match.end()]
             ))
@@ -79,7 +80,7 @@ def tokenize(source_code: str) -> list[Token]:
         match = oper_re.match(source_code, pos)
         if match:
             tokens.append(Token(
-                loc = Location(line=line, column=column),
+                loc = Location(pos=pos, line=line, column=column),
                 type="identifier",
                 text=source_code[pos:match.end()]
             ))
@@ -90,7 +91,7 @@ def tokenize(source_code: str) -> list[Token]:
         match = punct_re.match(source_code, pos)
         if match:
             tokens.append(Token(
-                loc = Location(line=line, column=column),
+                loc = Location(pos=pos, line=line, column=column),
                 type="punctuation",
                 text=source_code[pos:match.end()]
             ))

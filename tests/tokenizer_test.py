@@ -13,10 +13,10 @@ def test_tokenizer_basics() -> None:
 
 def test_tokenizer_location() -> None:
     assert tokenize('aaa \n123 \n  bbb  ccc') == [
-    Token(loc=Location(1, 1), type="identifier", text="aaa"),
-    Token(loc=Location(2, 1), type="int_literal", text="123"),
-    Token(loc=Location(3, 3), type="identifier", text="bbb"),
-    Token(loc=Location(3, 8), type="identifier", text="ccc"),
+    Token(loc=Location(0, 1, 1), type="identifier", text="aaa"),
+    Token(loc=Location(5, 2, 1), type="int_literal", text="123"),
+    Token(loc=Location(12, 3, 3), type="identifier", text="bbb"),
+    Token(loc=Location(17, 3, 8), type="identifier", text="ccc"),
     ]
     return None
 
