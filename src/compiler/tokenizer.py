@@ -1,8 +1,13 @@
 import re
 from dataclasses import dataclass
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 class L:
+    def __init__(self) -> None:
+        self.pos: Optional[int] = None
+        self.line: Optional[int] = None
+        self.column: Optional[int] = None
+
     def __eq__(self, arg: object) -> bool:
         return isinstance(arg, (Location, L))
 
