@@ -50,3 +50,13 @@ class Assignement(Expression):
 class UnaryOp(Expression):
     op: str
     operand: Expression
+
+@dataclass
+class Block(Expression):
+    expressions: list[Expression]
+    result: Expression
+
+@dataclass
+class While(Expression):
+    condition: Expression
+    do_clause: Expression

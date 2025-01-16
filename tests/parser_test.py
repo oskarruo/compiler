@@ -205,6 +205,13 @@ def test_parser_function() -> None:
     )
     return None
 
+def test_parser_function_no_args() -> None:
+    assert parse(tokenize('f()')) == ast.Function(
+        name='f',
+        arguments=[]
+    )
+    return None
+
 def test_parser_function_arguments_fail() -> None:
     with pytest.raises(Exception, match=r'Parsing error at 1:5: expected an argument'):
         parse(tokenize('f(x,)'))
@@ -312,5 +319,40 @@ def test_parser_unary() -> None:
         ),
         then_clause=ast.Identifier(name='b'),
         else_clause=None
+    )
+    return None
+
+def test_parser_block() -> None:
+    assert parse(tokenize('{a = 1; x}')) == ast.Block(
+        expressions=[
+            ast.Assignement(
+                left=ast.Identifier(name='a'),
+                right=ast.Literal(value=1)
+            )
+        ],
+        result=ast.Identifier(name='x')
+    )
+    return None
+
+def test_parser_while() -> None:
+    assert parse(tokenize('while x < 10 do { x = x + 1; }')) == ast.While(
+        condition=ast.BinaryComp(
+            left=ast.Identifier(name='x'),
+            op='<',
+            right=ast.Literal(10)
+        ),
+        do_clause=ast.Block(
+            expressions=[
+                ast.Assignement(
+                    left=ast.Identifier(name='x'),
+                    right=ast.BinaryOp(
+                        left=ast.Identifier(name='x'),
+                        op='+',
+                        right=ast.Literal(1)
+                    )
+                )
+            ],
+            result=ast.Literal(None)
+        )
     )
     return None

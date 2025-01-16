@@ -56,7 +56,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 left,
                 right
             )
-        if peek().type == "end" or peek().text in [')', 'then', 'else', ',']:
+        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do']:
             return left
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
@@ -161,6 +161,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_parenthesized()
         elif peek().text == 'if':
             return parse_if_expression()
+        elif peek().text == 'while':
+            return parse_while()
         elif peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
@@ -170,6 +172,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return ident
         elif peek().type == 'boolean':
             return parse_boolean()
+        elif peek().text == '{':
+            return parse_block()
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
 
@@ -202,6 +206,27 @@ def parse(tokens: list[Token]) -> ast.Expression:
                     raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}: expected an argument')
         consume(')')
         return ast.Function(name=ident.name, arguments=args)
+    
+    def parse_block() -> ast.Block:
+        expressions = []
+        consume('{')
+        res: ast.Expression = ast.Literal(None)
+        while peek().text != '}':
+            exp = parse_expression()
+            if peek().text == ';':
+                consume(';')
+                expressions.append(exp)
+            else:
+                res = exp
+        consume('}')
+        return ast.Block(expressions=expressions, result=res)
+    
+    def parse_while() -> ast.While:
+        consume('while')
+        condition = parse_expression()
+        consume('do')
+        do_clause = parse_block()
+        return ast.While(condition=condition, do_clause=do_clause)
 
     result = parse_expression()
 
