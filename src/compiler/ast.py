@@ -45,3 +45,8 @@ class BinaryLogical(Expression):
 class Assignement(Expression):
     left: Expression
     right: Expression
+
+@dataclass
+class UnaryOp(Expression):
+    op: str
+    operand: Expression

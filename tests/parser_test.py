@@ -292,12 +292,25 @@ def test_new_opers_with_other() -> None:
     return None
 
 def test_parser_assignement() -> None:
-    print(parse(tokenize('a=b=c')))
     assert parse(tokenize('a=b=c')) == ast.Assignement(
         left=ast.Identifier(name='a'),
         right=ast.Assignement(
             left=ast.Identifier(name='b'),
             right=ast.Identifier(name='c')
         )
+    )
+    return None
+
+def test_parser_unary() -> None:
+    assert parse(tokenize('if not - c then b')) == ast.IfExpression(
+        condition=ast.UnaryOp(
+            op='not',
+            operand=ast.UnaryOp(
+                op='-',
+                operand=ast.Identifier(name='c')
+            )
+        ),
+        then_clause=ast.Identifier(name='b'),
+        else_clause=None
     )
     return None

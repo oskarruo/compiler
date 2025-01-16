@@ -132,18 +132,46 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return left
 
     def parse_term() -> ast.Expression:
-        left = parse_factor()
+        left = parse_unary()
 
         while peek().text in ['*', '/', '%']:
             operator_token = consume()
             operator = operator_token.text
-            right = parse_factor()
+            right = parse_unary()
             left = ast.BinaryOp(
                 left,
                 operator,
                 right
             )
         return left
+    
+    def parse_unary() -> ast.Expression:
+        while peek().text in ['-', 'not']:
+            operator_token = consume()
+            operator = operator_token.text
+            operand = parse_unary()
+            return ast.UnaryOp(
+                op=operator,
+                operand=operand
+            )
+        return parse_factor()
+
+    def parse_factor() -> ast.Expression:
+        if peek().text == '(':
+            return parse_parenthesized()
+        elif peek().text == 'if':
+            return parse_if_expression()
+        elif peek().type == 'int_literal':
+            return parse_int_literal()
+        elif peek().type == 'identifier':
+            ident = parse_identifier()
+            if peek().text == '(':
+                return parse_function(ident=ident)
+            return ident
+        elif peek().type == 'boolean':
+            return parse_boolean()
+        else:
+            raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')
@@ -175,23 +203,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume(')')
         return ast.Function(name=ident.name, arguments=args)
 
-    def parse_factor() -> ast.Expression:
-        if peek().text == '(':
-            return parse_parenthesized()
-        elif peek().text == 'if':
-            return parse_if_expression()
-        elif peek().type == 'int_literal':
-            return parse_int_literal()
-        elif peek().type == 'identifier':
-            ident = parse_identifier()
-            if peek().text == '(':
-                return parse_function(ident=ident)
-            return ident
-        elif peek().type == 'boolean':
-            return parse_boolean()
-        else:
-            raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
-    
     result = parse_expression()
 
     if pos != len(tokens):
