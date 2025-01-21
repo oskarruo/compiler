@@ -60,3 +60,9 @@ class Block(Expression):
 class While(Expression):
     condition: Expression
     do_clause: Expression
+
+@dataclass
+class Variable(Expression):
+    ident: Identifier
+    type: Identifier | None
+    value: Expression

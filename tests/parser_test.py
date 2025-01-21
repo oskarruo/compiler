@@ -1,8 +1,5 @@
 import pytest
 from compiler.tokenizer import tokenize
-from compiler.tokenizer import Token
-from compiler.tokenizer import Location
-from compiler.tokenizer import L
 from compiler.parser import parse
 import compiler.ast as ast
 
@@ -356,3 +353,56 @@ def test_parser_while() -> None:
         )
     )
     return None
+
+def test_parser_variable() -> None:
+    assert parse(tokenize('var x = 123')) == ast.Variable(
+        ident=ast.Identifier(name='x'),
+        type=None,
+        value=ast.Literal(123)
+    )
+    return None
+
+def test_parser_variable_inside_expression_fail() -> None:
+    with pytest.raises(Exception, match=r'Parsing error at 1:11'):
+        parse(tokenize('if x then var x = 123'))
+    return None
+
+def test_parser_variable_inside_block_fail() -> None:
+    with pytest.raises(Exception, match=r'Parsing error at 1:13'):
+        parse(tokenize('{ if x then var x = 123 }'))
+    return None
+
+def test_variable_inside_block() -> None:
+    assert parse(tokenize('{ var x = 123; var y = 123; }')) == ast.Block(
+        expressions=[
+            ast.Variable(
+                ident=ast.Identifier(name='x'),
+                type=None,
+                value=ast.Literal(123)
+            ),
+            ast.Variable(
+                ident=ast.Identifier(name='y'),
+                type=None,
+                value=ast.Literal(123)
+            )
+        ],
+        result=ast.Literal(None)
+    )
+    return None
+
+def test_parser_variable_with_type() -> None:
+    assert parse(tokenize('var x: int = 123')) == ast.Variable(
+        ident=ast.Identifier(name='x'),
+        type=ast.Identifier(name='int'),
+        value=ast.Literal(123)
+    )
+    return None
+
+def test_parser_multiple_top_level() -> None:
+    assert parse(tokenize('x; y; z')) == ast.Block(
+        expressions=[
+            ast.Identifier(name='x'),
+            ast.Identifier(name='y')
+        ],
+        result=ast.Identifier(name='z')
+    )

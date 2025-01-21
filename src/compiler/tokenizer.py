@@ -39,7 +39,7 @@ def tokenize(source_code: str) -> list[Token]:
     newline_re = re.compile(r'\n')
     comments_re = re.compile(r'//.*|#.*')
     oper_re = re.compile(r'<=|>=|==|!=|>|<|=|/|-|\*|\+|\%')
-    punct_re = re.compile(r'[(){},;]')
+    punct_re = re.compile(r'[(){},;:]')
     whitespace_re = re.compile(r'[^\S\n]+')
 
     pos = 0
