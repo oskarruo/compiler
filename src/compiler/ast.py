@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from compiler.tokenizer import Location, L
 
 @dataclass
 class Expression:
-    pass
+    location: Location | L
 
 @dataclass
 class Literal(Expression):
