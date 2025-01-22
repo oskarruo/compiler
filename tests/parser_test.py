@@ -427,7 +427,7 @@ def test_parser_variable_inside_block_fail() -> None:
         parse(tokenize('{ if x then var x = 123 }'))
     return None
 
-def test_variable_inside_block() -> None:
+def test_parser_variable_inside_block() -> None:
     assert parse(tokenize('{ var x = 123; var y = 123; }')) == ast.Block(
         expressions=[
             ast.Variable(

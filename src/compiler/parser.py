@@ -45,7 +45,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
         if peek().type != 'boolean':
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}: expected a boolean')
         token = consume()
-        return ast.Literal(value=bool(token.text), location=token.loc)
+        if token.text == 'true':
+            return ast.Literal(value=True, location=token.loc)
+        return ast.Literal(value=False, location=token.loc)
 
     def parse_expression() -> ast.Expression:
         nonlocal depth
