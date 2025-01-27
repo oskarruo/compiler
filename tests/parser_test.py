@@ -411,7 +411,7 @@ def test_parser_while() -> None:
 def test_parser_variable() -> None:
     assert parse(tokenize('var x = 123')) == ast.Variable(
         ident=ast.Identifier(name='x', location=L()),
-        type=None,
+        type_declaration=None,
         value=ast.Literal(value=123, location=L()),
         location=L()
     )
@@ -432,13 +432,13 @@ def test_parser_variable_inside_block() -> None:
         expressions=[
             ast.Variable(
                 ident=ast.Identifier(name='x', location=L()),
-                type=None,
+                type_declaration=None,
                 value=ast.Literal(value=123, location=L()),
                 location=L()
             ),
             ast.Variable(
                 ident=ast.Identifier(name='y', location=L()),
-                type=None,
+                type_declaration=None,
                 value=ast.Literal(value=123, location=L()),
                 location=L()
             )
@@ -451,7 +451,7 @@ def test_parser_variable_inside_block() -> None:
 def test_parser_variable_with_type() -> None:
     assert parse(tokenize('var x: int = 123')) == ast.Variable(
         ident=ast.Identifier(name='x', location=L()),
-        type=ast.Identifier(name='int', location=L()),
+        type_declaration=ast.Identifier(name='int', location=L()),
         value=ast.Literal(value=123, location=L()),
         location=L()
     )

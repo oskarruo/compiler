@@ -210,7 +210,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
             type = parse_identifier()
         consume('=')
         value = parse_expression()
-        return ast.Variable(ident=ident, type=type, value=value, location=ident.location)
+        return ast.Variable(ident=ident, type_declaration=type, value=value, location=ident.location)
 
     def parse_if_expression() -> ast.Expression:
         consume('if')
@@ -262,7 +262,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         consume('while')
         condition = parse_expression()
         consume('do')
-        do_clause = parse_block()
+        do_clause = parse_expression()
         return ast.While(condition=condition, do_clause=do_clause, location=condition.location)
     
     def parse_top_level() -> ast.Expression:

@@ -1,9 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from compiler.tokenizer import Location, L
+from compiler.types import Type, Unit
 
 @dataclass
 class Expression:
     location: Location | L
+    type: Type = field(kw_only=True, default=Unit)
 
 @dataclass
 class Literal(Expression):
@@ -65,5 +67,5 @@ class While(Expression):
 @dataclass
 class Variable(Expression):
     ident: Identifier
-    type: Identifier | None
+    type_declaration: Identifier | None
     value: Expression
