@@ -5,6 +5,10 @@ import sys
 from socketserver import ForkingTCPServer, StreamRequestHandler
 from traceback import format_exception
 from typing import Any
+from compiler.tokenizer import tokenize
+from compiler.parser import parse
+from compiler.type_checker import typecheck
+from compiler.ir_generator import generate_ir
 
 
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
@@ -58,6 +62,13 @@ def main() -> int:
         executable = call_compiler(source_code, input_file or '(source code)')
         with open(output_file, 'wb') as f:
             f.write(executable)
+    elif command == 'ir':
+        source_code = read_source_code()
+        tokens = tokenize(source_code)
+        ast_node = parse(tokens)
+        typecheck(ast_node)
+        ir = generate_ir(ast_node)
+        print("\n".join(str(i) for i in ir))
     elif command == 'serve':
         try:
             run_server(host, port)
