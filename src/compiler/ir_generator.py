@@ -182,11 +182,11 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             case ast.Variable():
                 if expr.ident.name in st.locals:
                     raise Exception(f'Variable already defined in this scope: {expr.ident.name}')
-                var = new_var(expr.type)
+                var = new_var(expr.value.type)
                 value = visit(st, expr.value)
                 instructions.append(ir.Copy(location=loc, src=value, dest=var))
                 st.locals[expr.ident.name] = var
-                return var
+                return var_unit
 
             case ast.Block():
                 new_st = SymTab(locals={}, parent=st)
@@ -230,8 +230,8 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
     var_final_result = visit(SymTab(locals={}, parent=root_symtab), root_node)
 
     if var_types[var_final_result] == Int:
-        instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_int'], args=[var_final_result], dest=var_unit))
+        instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_int'], args=[var_final_result], dest=new_var(Unit)))
     elif var_types[var_final_result] == Bool:
-        instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_bool'], args=[var_final_result], dest=var_unit))
+        instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_bool'], args=[var_final_result], dest=new_var(Unit)))
 
     return instructions
