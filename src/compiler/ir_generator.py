@@ -12,7 +12,7 @@ class SymTab:
 def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
     root_types = {ir.IRVar(name): typ for name, typ in functions.items()}
     
-    var_types: dict[ir.IRVar, Type] = root_types.copy()
+    var_types: dict[ir.IRVar, Type] = dict(root_types)
 
     var_unit = ir.IRVar('unit')
     var_types[var_unit] = Unit
@@ -57,7 +57,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
 
             case ast.Identifier():
                 current_scope = st
-                while current_scope:
+                while current_scope.parent:
                     if expr.name in current_scope.locals:
                         return current_scope.locals[expr.name]
                     current_scope = current_scope.parent
@@ -196,13 +196,14 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             
             case ast.Assignement():
                 if isinstance(expr.left, ast.Identifier):
-                    var = None
+                    v = None
                     current_scope = st
-                    while current_scope:
+                    while current_scope.parent:
                         if expr.left.name in current_scope.locals:
                             var = current_scope.locals[expr.left.name]
+                            v = True
                         current_scope = current_scope.parent
-                    if var is None:
+                    if v is None:
                         raise Exception(f'Unknown variable: {expr.left.name}')
                     value = visit(st, expr.right)
                     instructions.append(ir.Copy(location=loc, src=value, dest=var))

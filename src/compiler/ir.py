@@ -1,17 +1,17 @@
 from dataclasses import dataclass, fields
 from typing import Any
-from compiler.tokenizer import Location
+from compiler.tokenizer import Location, L
 
 @dataclass(frozen=True)
 class IRVar:
     name: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 @dataclass(frozen=True)
 class Instruction:
-    location: Location
+    location: Location | L | None
     
     def __str__(self) -> str:
         def format_value(v: Any) -> str:

@@ -7,6 +7,13 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     depth = 0
     pos = 0
+    in_block = False
+    prev_block = False
+    in_then_expr = False
+    if_then_block = False
+    in_else_expr = False
+    if_else_block = False
+    if_ends_in_block = False
 
     def peek() -> Token:
         if pos < len(tokens):
@@ -50,7 +57,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Literal(value=False, location=token.loc)
 
     def parse_expression() -> ast.Expression:
-        nonlocal depth
+        nonlocal depth, in_block, prev_block, if_ends_in_block
         depth += 1
         left = parse_or()
 
@@ -62,7 +69,9 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right=right,
                 location=left.location
             )
-        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do']:
+        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do'] or (prev_block and in_block) or (if_ends_in_block and in_block):
+            if_ends_in_block = False
+            prev_block = False
             depth -= 1
             return left
         else:
@@ -171,6 +180,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return parse_factor()
 
     def parse_factor() -> ast.Expression:
+        nonlocal in_block
         if peek().text == '(':
             return parse_parenthesized()
         elif peek().text == 'var':
@@ -189,7 +199,11 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif peek().type == 'boolean':
             return parse_boolean()
         elif peek().text == '{':
-            return parse_block()
+            prev_in_block = in_block
+            in_block = True
+            e = parse_block()
+            in_block = prev_in_block
+            return e
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
 
@@ -213,15 +227,30 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Variable(ident=ident, type_declaration=type, value=value, location=ident.location)
 
     def parse_if_expression() -> ast.Expression:
+        nonlocal in_then_expr, in_else_expr, if_then_block, if_else_block, if_ends_in_block
         consume('if')
         condition = parse_expression()
+        
+        in_then_expr = True
         consume('then')
         then_clause = parse_expression()
+        in_then_expr = False
+
         if peek().text == 'else':
             consume('else')
+            in_else_expr = True
             else_clause = parse_expression()
+            in_else_expr = False
+
+            if if_else_block:
+                if_ends_in_block = True
+            if_else_block = False
         else:
+            if if_then_block:
+                if_ends_in_block = True
+            if_then_block = False
             else_clause = None
+
         return ast.IfExpression(condition=condition, then_clause=then_clause, else_clause=else_clause, location=condition.location)
 
     def parse_function(ident: ast.Identifier) -> ast.Expression:
@@ -237,25 +266,39 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Function(name=ident.name, arguments=args, location=ident.location)
     
     def parse_block() -> ast.Block:
-        nonlocal depth
+        nonlocal depth, prev_block, in_then_expr, in_else_expr, if_then_block, if_else_block
+        if in_then_expr:
+            if_then_block = True
+        if in_else_expr:
+            if_else_block = True
+
         old_depth = depth
         depth = 0
 
         expressions = []
         consume('{')
         res: ast.Expression = ast.Literal(value=None, location=L())
+        exp: ast.Expression = ast.Literal(value=None, location=L())
+        last_result = False
         while peek().text != '}':
+            last_result = True
             exp = parse_expression()
             if peek().text == ';':
                 consume(';')
-                expressions.append(exp)
-            else:
-                res = exp
+                last_result = False
+            if peek().text == '}':
+                break
+            expressions.append(exp)
+        if last_result:
+            res = exp
+        else:
+            expressions.append(exp)
         consume('}')
 
         loc = expressions[0].location if expressions else peek().loc
 
         depth = old_depth
+        prev_block = True
         return ast.Block(expressions=expressions, result=res, location=loc)
     
     def parse_while() -> ast.While:

@@ -479,3 +479,126 @@ def test_parser_expression_many_operators() -> None:
         ),
         location=L()
     )
+
+def test_parser_semicolons() -> None:
+    assert parse(tokenize('{ { x } { y } }')) == ast.Block(
+        expressions=[
+            ast.Block(
+                expressions=[],
+                result=ast.Identifier(name='x', location=L()),
+                location=L()
+            )
+        ],
+        result=
+            ast.Block(
+                expressions=[],
+                result=ast.Identifier(name='y', location=L()),
+                location=L()
+            ),
+        location=L()
+    )
+    
+    with pytest.raises(Exception, match=r'Parsing error at 1:5'):
+        parse(tokenize('{ a b}'))
+
+    assert parse(tokenize('{ if true then { a } b }')) == ast.Block(
+        expressions=[
+            ast.IfExpression(
+                condition=ast.Literal(value=True, location=L()),
+                then_clause=
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Identifier(name='a', location=L()),
+                        location=L()
+                    ),
+                else_clause=None,
+                location=L()
+            )
+        ],
+        result=ast.Identifier(name='b', location=L()),
+        location=L()
+    )
+
+    assert parse(tokenize('{ if true then { a }; b }')) == ast.Block(
+        expressions=[
+            ast.IfExpression(
+                condition=ast.Literal(value=True, location=L()),
+                then_clause=
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Identifier(name='a', location=L()),
+                        location=L()
+                    ),
+                else_clause=None,
+                location=L()
+            )
+        ],
+        result=ast.Identifier(name='b', location=L()),
+        location=L()
+    )
+
+    with pytest.raises(Exception, match=r'Parsing error at 1:24'):
+        parse(tokenize('{ if true then { a } b c }'))
+    
+    assert parse(tokenize('{ if true then { a } b; c }')) == ast.Block(
+        expressions=[
+            ast.IfExpression(
+                condition=ast.Literal(value=True, location=L()),
+                then_clause=
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Identifier(name='a', location=L()),
+                        location=L()
+                    ),
+                else_clause=None,
+                location=L()
+            ),
+            ast.Identifier(name='b', location=L())
+        ],
+        result=ast.Identifier(name='c', location=L()),
+        location=L()
+    )
+
+    assert parse(tokenize('{ if true then { a } else { b } c }')) == ast.Block(
+        expressions=[
+            ast.IfExpression(
+                condition=ast.Literal(value=True, location=L()),
+                then_clause=
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Identifier(name='a', location=L()),
+                        location=L()
+                    ),
+                else_clause=
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Identifier(name='b', location=L()),
+                        location=L()
+                    ),
+                location=L()
+            )
+        ],
+        result=ast.Identifier(name='c', location=L()),
+        location=L()
+    )
+
+    assert parse(tokenize('x = { { f(a) } { b } }')) == ast.Assignement(
+        left=ast.Identifier(name='x', location=L()),
+        right=
+            ast.Block(
+                expressions=[
+                    ast.Block(
+                        expressions=[],
+                        result=ast.Function(name='f', arguments=[ast.Identifier(name='a', location=L())], location=L()),
+                        location=L()
+                    )
+                ],
+                result=ast.Block(
+                    expressions=[],
+                    result=ast.Identifier(name='b', location=L()),
+                    location=L()
+                ),
+                location=L()
+            ),
+        location=L()
+    )

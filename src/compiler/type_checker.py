@@ -63,7 +63,7 @@ def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Ty
                     raise Exception(f"Invalid types for variable {name}: {a}, {b}")
 
             symtab[name] = a
-            node.type = Int
+            node.type = Unit
 
         case ast.Assignement():
             if not isinstance(node.left, ast.Identifier):
