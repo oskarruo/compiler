@@ -93,15 +93,19 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                     var_cond = visit(st, expr.condition)
                     instructions.append(ir.CondJump(location=loc, cond=var_cond, then_label=l_then, else_label=l_else))
 
+                    var_result = new_var(expr.type)
+
                     instructions.append(ir.Label(location=loc, name=l_then.name))
-                    visit(st, expr.then_clause)
+                    var_then = visit(st, expr.then_clause)
+                    instructions.append(ir.Copy(location=loc, src=var_then, dest=var_result))
                     instructions.append(ir.Jump(location=loc, label=l_end))
 
                     instructions.append(ir.Label(location=loc, name=l_else.name))
-                    visit(st, expr.else_clause)
+                    var_else = visit(st, expr.else_clause)
+                    instructions.append(ir.Copy(location=loc, src=var_else, dest=var_result))
                     instructions.append(ir.Label(location=loc, name=l_end.name))
 
-                    return var_unit
+                    return var_result
             
             case ast.BinaryComp():
                 if expr.op in ['==', '!=']:
