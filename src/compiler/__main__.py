@@ -9,15 +9,16 @@ from compiler.tokenizer import tokenize
 from compiler.parser import parse
 from compiler.type_checker import typecheck
 from compiler.ir_generator import generate_ir
-
+from compiler.assembly_generator import generate_assembly
+from compiler.assembler import assemble_and_get_executable
 
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
-    # *** TODO ***
-    # Call your compiler here and return the compiled executable.
-    # Raise an exception on compilation error.
-    # *** TODO ***
-    raise NotImplementedError("Compiler not implemented")
-
+    tokens = tokenize(source_code)
+    ast_node = parse(tokens)
+    typecheck(ast_node)
+    ir = generate_ir(ast_node)
+    asm_code = generate_assembly(ir)
+    return assemble_and_get_executable(asm_code)
 
 def main() -> int:
     # === Option parsing ===
@@ -69,6 +70,14 @@ def main() -> int:
         typecheck(ast_node)
         ir = generate_ir(ast_node)
         print("\n".join(str(i) for i in ir))
+    elif command == 'asm':
+        source_code = read_source_code()
+        tokens = tokenize(source_code)
+        ast_node = parse(tokens)
+        typecheck(ast_node)
+        ir = generate_ir(ast_node)
+        asm_code = generate_assembly(ir)
+        print(asm_code)
     elif command == 'serve':
         try:
             run_server(host, port)
