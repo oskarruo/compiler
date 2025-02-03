@@ -7,7 +7,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
 
     depth = 0
     pos = 0
-    in_block = False
     prev_block = False
     in_then_expr = False
     if_then_block = False
@@ -57,7 +56,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Literal(value=False, location=token.loc)
 
     def parse_expression() -> ast.Expression:
-        nonlocal depth, in_block, prev_block, if_ends_in_block
+        nonlocal depth, prev_block, if_ends_in_block
         depth += 1
         left = parse_or()
 
@@ -69,7 +68,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right=right,
                 location=left.location
             )
-        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do'] or (prev_block and in_block) or (if_ends_in_block and in_block):
+        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do', 'print_int', 'print_bool', 'read_int'] or prev_block or if_ends_in_block:
             if_ends_in_block = False
             prev_block = False
             depth -= 1
@@ -180,7 +179,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return parse_factor()
 
     def parse_factor() -> ast.Expression:
-        nonlocal in_block
         if peek().text == '(':
             return parse_parenthesized()
         elif peek().text == 'var':
@@ -199,11 +197,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         elif peek().type == 'boolean':
             return parse_boolean()
         elif peek().text == '{':
-            prev_in_block = in_block
-            in_block = True
-            e = parse_block()
-            in_block = prev_in_block
-            return e
+            return parse_block()
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
 
@@ -309,23 +303,30 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.While(condition=condition, do_clause=do_clause, location=condition.location)
     
     def parse_top_level() -> ast.Expression:
-        block = False
         expressions = []
         res: ast.Expression = ast.Literal(value=None, location=L())
         while pos < len(tokens):
+            last_result = True
             exp = parse_expression()
             if peek().text == ';':
-                block = True
                 consume(';')
-                expressions.append(exp)
-            else:
-                res = exp
+                last_result = False
+            if peek().type == 'end':
+                break
+            expressions.append(exp)
+        
+        if last_result:
+            res = exp
+        else:
+            expressions.append(exp)
 
-        loc = expressions[0].location if expressions else peek().loc
-
-        if block:
+        if len(expressions) == 1 and res == ast.Literal(value=None, location=L()):
+            return expressions[0]
+        elif len(expressions) == 0:
+            return res
+        else:
+            loc = expressions[0].location if expressions else peek().loc
             return ast.Block(expressions=expressions, result=res, location=loc)
-        return res
 
     result = parse_top_level()
 
