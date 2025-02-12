@@ -2,3 +2,6 @@
 __pycache__
 /.mypy_cache
 /.test-gadget
+Dockerfile
+test-gadget.py
+.dockerignore*
