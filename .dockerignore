@@ -1,4 +1,0 @@
-.test-gadget
-.*_cache
-*.pyc
-__pycache__
