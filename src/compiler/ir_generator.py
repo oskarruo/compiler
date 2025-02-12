@@ -206,6 +206,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                         if expr.left.name in current_scope.locals:
                             var = current_scope.locals[expr.left.name]
                             v = True
+                            break
                         current_scope = current_scope.parent
                     if v is None:
                         raise Exception(f'Unknown variable: {expr.left.name}')

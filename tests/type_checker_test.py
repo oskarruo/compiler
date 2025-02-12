@@ -2,7 +2,7 @@ import pytest
 import re
 from compiler.tokenizer import tokenize
 from compiler.parser import parse
-from compiler.type_checker import typecheck
+from compiler.type_checker import typecheck, SymTab
 from compiler.types import Bool, Int, Unit, FunType
 
 def test_type_checker_binary_op() -> None:
@@ -49,7 +49,7 @@ def test_type_checker_binary_logical() -> None:
     return None
 
 def test_type_checker_unary_op() -> None:
-    assert typecheck(parse(tokenize("-x")), symtab={'x': Int}) == Int
+    assert typecheck(parse(tokenize("-x")), symtab=SymTab({'x': Int}, SymTab({}, None))) == Int
     assert typecheck(parse(tokenize("not true"))) == Bool
 
     with pytest.raises(Exception, match=re.escape("Invalid type for operator not: BasicType(name='Int')")):
@@ -114,7 +114,7 @@ def test_type_checker_variable_declaration() -> None:
     return None
 
 def test_type_checker_variable_assignment() -> None:
-    assert typecheck(parse(tokenize("var x = 1; x = 2"))) == Unit
+    assert typecheck(parse(tokenize("var x = 1; x = 2"))) == Int
 
     with pytest.raises(Exception, match=re.escape("Unknown variable: x")):
         typecheck(parse(tokenize("x = 2")))

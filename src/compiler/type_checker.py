@@ -1,3 +1,5 @@
+from __future__ import annotations
+from dataclasses import dataclass
 from compiler import ast
 from compiler.types import Int, Bool, Unit, Type, FunType
 
@@ -26,9 +28,14 @@ types = {
     'Unit': Unit
 }
 
-def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Type:
+@dataclass
+class SymTab:
+    locals: dict
+    parent: SymTab | None
+
+def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
     if symtab is None:
-        symtab = {}
+        symtab = SymTab(locals={}, parent=SymTab(locals={}, parent=None))
 
     match node:
         case ast.Literal():
@@ -42,11 +49,20 @@ def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Ty
                 raise Exception(f"Unknown literal type: {node.value}")
         
         case ast.Identifier():
+            v = False
             if node.name in types:
                 node.type = types[node.name]
-            elif node.name in symtab:
-                node.type = symtab[node.name]
+                v = True
             else:
+                current_scope = symtab
+                while current_scope.parent:
+                    if node.name in current_scope.locals:
+                        node.type = current_scope.locals[node.name]
+                        v = True
+                        break
+                    current_scope = current_scope.parent
+            
+            if not v:
                 raise Exception(f"Unknown identifier: {node.name}")
         
         case ast.Variable():
@@ -62,7 +78,7 @@ def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Ty
                 if a != b:
                     raise Exception(f"Invalid types for variable {name}: {a}, {b}")
 
-            symtab[name] = a
+            symtab.locals[name] = a
             node.type = Unit
 
         case ast.Assignement():
@@ -72,14 +88,21 @@ def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Ty
             name = node.left.name
             c: Type = typecheck(node=node.right, symtab=symtab)
 
-            if name in symtab:
-                d = symtab[name]
-                if c != d:
-                    raise Exception(f"Invalid types for assignement: {c}, {d}")
-            else:
+            v = False
+            current_scope = symtab
+            while current_scope.parent:
+                if name in current_scope.locals:
+                    d = current_scope.locals[name]
+                    if c != d:
+                        raise Exception(f"Invalid types for assignement: {c}, {d}")
+                    v = True
+                    break
+                current_scope = current_scope.parent
+
+            if v is False:
                 raise Exception(f"Unknown variable: {name}")
             
-            node.type = Unit
+            node.type = d
 
         case ast.BinaryOp():
             func = functions[node.op]
@@ -149,9 +172,10 @@ def typecheck(node: ast.Expression, symtab: dict[str, Type] | None = None) -> Ty
                 raise Exception(f"Invalid type for operator {node.op}: {m}")
         
         case ast.Block():
+            new_symtab = SymTab(locals={}, parent=symtab)
             for expression in node.expressions:
-                typecheck(node=expression, symtab=symtab)
-            node.type = typecheck(node=node.result, symtab=symtab)
+                typecheck(node=expression, symtab=new_symtab)
+            node.type = typecheck(node=node.result, symtab=new_symtab)
         
         case ast.Function():
             func = functions[node.name]
