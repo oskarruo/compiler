@@ -14,6 +14,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
     if_else_block = False
     if_ends_in_block = False
     while_ends_in_block = False
+    var_ends_in_block = False
 
     def peek() -> Token:
         if pos < len(tokens):
@@ -57,7 +58,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.Literal(value=False, location=token.loc)
 
     def parse_expression() -> ast.Expression:
-        nonlocal depth, prev_block, if_ends_in_block, while_ends_in_block
+        nonlocal depth, prev_block, if_ends_in_block, while_ends_in_block, var_ends_in_block
         depth += 1
         left = parse_or()
 
@@ -69,10 +70,11 @@ def parse(tokens: list[Token]) -> ast.Expression:
                 right=right,
                 location=left.location
             )
-        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do', 'print_int', 'print_bool', 'read_int'] or prev_block or if_ends_in_block or while_ends_in_block:
+        if peek().type == "end" or peek().text in [')', 'then', 'else', ',', ';', '}', 'do', 'print_int', 'print_bool', 'read_int'] or prev_block or if_ends_in_block or while_ends_in_block or var_ends_in_block:
             while_ends_in_block = False
             if_ends_in_block = False
             prev_block = False
+            var_ends_in_block = False
             depth -= 1
             return left
         else:
@@ -210,6 +212,7 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return expression
     
     def parse_variable() -> ast.Expression:
+        nonlocal var_ends_in_block
         if depth > 1:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
         consume('var')
@@ -220,6 +223,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
             type = parse_identifier()
         consume('=')
         value = parse_expression()
+        if isinstance(value, ast.Block):
+            var_ends_in_block = True
         return ast.Variable(ident=ident, type_declaration=type, value=value, location=ident.location)
 
     def parse_if_expression() -> ast.Expression:
