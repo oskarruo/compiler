@@ -194,6 +194,12 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
             typecheck(node=node.do_clause, symtab=symtab)
             node.type = Unit
         
+        case ast.Break():
+            node.type = Unit
+        
+        case ast.Continue():
+            node.type = Unit
+        
         case _:
             raise Exception(f"Unknown node type: {node}")
 

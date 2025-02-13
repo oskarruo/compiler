@@ -191,6 +191,10 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_if_expression()
         elif peek().text == 'while':
             return parse_while()
+        elif peek().text == 'break':
+            return parse_break()
+        elif peek().text == 'continue':
+            return parse_continue()
         elif peek().type == 'int_literal':
             return parse_int_literal()
         elif peek().type == 'identifier':
@@ -204,6 +208,14 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_block()
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
+    
+    def parse_break() -> ast.Break:
+        token = consume('break')
+        return ast.Break(location=token.loc)
+    
+    def parse_continue() -> ast.Continue:
+        token = consume('continue')
+        return ast.Continue(location=token.loc)
 
     def parse_parenthesized() -> ast.Expression:
         consume('(')

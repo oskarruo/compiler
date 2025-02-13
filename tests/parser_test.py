@@ -602,3 +602,26 @@ def test_parser_semicolons() -> None:
             ),
         location=L()
     )
+
+def test_parser_break_continue() -> None:
+    assert parse(tokenize('while true do { break }')) == ast.While(
+        condition=ast.Literal(value=True, location=L()),
+        do_clause=ast.Block(
+            expressions=[],
+            result=ast.Break(location=L()),
+            location=L()
+        ),
+        location=L()
+    )
+
+    assert parse(tokenize('while true do { continue }')) == ast.While(
+        condition=ast.Literal(value=True, location=L()),
+        do_clause=ast.Block(
+            expressions=[],
+            result=ast.Continue(location=L()),
+            location=L()
+        ),
+        location=L()
+    )
+
+    return None

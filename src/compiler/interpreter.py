@@ -5,6 +5,12 @@ from compiler import ast
 
 Value = int | bool | Callable | None
 
+class BreakExpection(Exception):
+    pass
+
+class ContinueExpection(Exception):
+    pass
+
 @dataclass
 class SymTab:
     locals: dict
@@ -149,8 +155,19 @@ def interpret(node: ast.Expression, tbl: SymTab | None = None) -> Value:
         
         case ast.While():
             while interpret(node=node.condition, tbl=table):
-                interpret(node=node.do_clause, tbl=table)
+                try:
+                    interpret(node=node.do_clause, tbl=table)
+                except ContinueExpection:
+                    continue
+                except BreakExpection:
+                    break
             return None
+
+        case ast.Break():
+            raise BreakExpection()
+        
+        case ast.Continue():
+            raise ContinueExpection()
 
         case _:
             raise Exception(f"Unknown node type: {type(node)}")

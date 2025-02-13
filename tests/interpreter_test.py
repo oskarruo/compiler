@@ -73,3 +73,11 @@ def test_interpreter_assignment() -> None:
 def test_interpreter_while() -> None:
     assert interpret(node=parse(tokenize("var x = 0; while x < 3 do { x = x + 1 }; x"))) == 3
     return None
+
+def test_interpreter_break() -> None:
+    assert interpret(node=parse(tokenize("var x = 0; while true do { x = x + 1; if x == 3 then break }; x"))) == 3
+    return None
+
+def test_interpreter_continue() -> None:
+    assert interpret(node=parse(tokenize("var x = 0; while x < 3 do { x = x + 2; if x == 2 then continue; x = x + 1;} x"))) == 5
+    return None

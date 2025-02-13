@@ -128,3 +128,9 @@ def test_type_checker_node_type_assignement() -> None:
     node = parse(tokenize("42"))
     typecheck(node)
     assert node.type == Int
+
+def test_type_checker_break_continue() -> None:
+    assert typecheck(parse(tokenize("break"))) == Unit
+    assert typecheck(parse(tokenize("continue"))) == Unit
+
+    return None

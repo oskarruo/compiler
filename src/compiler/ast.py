@@ -69,3 +69,11 @@ class Variable(Expression):
     ident: Identifier
     type_declaration: Identifier | None
     value: Expression
+
+@dataclass
+class Break(Expression):
+    pass
+
+@dataclass
+class Continue(Expression):
+    pass

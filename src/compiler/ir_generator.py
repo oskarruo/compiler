@@ -35,7 +35,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
     
     instructions: list[ir.Instruction] = []
     
-    def visit(st: SymTab, expr: ast.Expression) -> ir.IRVar:
+    def visit(st: SymTab, expr: ast.Expression, start_label: ir.Label | None = None, end_label: ir.Label | None = None) -> ir.IRVar:
         loc = expr.location
 
         match expr:
@@ -65,8 +65,8 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
 
             case ast.BinaryOp():
                 var_op = root_symtab.locals[expr.op]
-                var_left = visit(st, expr.left)
-                var_right = visit(st, expr.right)
+                var_left = visit(st, expr.left, start_label, end_label)
+                var_right = visit(st, expr.right, start_label, end_label)
                 var_result = new_var(expr.type)
                 instructions.append(ir.Call(location=loc, fun=var_op, args=[var_left, var_right], dest=var_result))
                 return var_result
@@ -76,11 +76,11 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                     l_then = new_label()
                     l_end = new_label()
 
-                    var_cond = visit(st, expr.condition)
+                    var_cond = visit(st, expr.condition, start_label, end_label)
                     instructions.append(ir.CondJump(location=loc, cond=var_cond, then_label=l_then, else_label=l_end))
 
                     instructions.append(ir.Label(location=loc, name=l_then.name))
-                    visit(st, expr.then_clause)
+                    visit(st, expr.then_clause, start_label, end_label)
 
                     instructions.append(ir.Label(location=loc, name=l_end.name))
 
@@ -90,18 +90,18 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                     l_else = new_label()
                     l_end = new_label()
 
-                    var_cond = visit(st, expr.condition)
+                    var_cond = visit(st, expr.condition, start_label, end_label)
                     instructions.append(ir.CondJump(location=loc, cond=var_cond, then_label=l_then, else_label=l_else))
 
                     var_result = new_var(expr.type)
 
                     instructions.append(ir.Label(location=loc, name=l_then.name))
-                    var_then = visit(st, expr.then_clause)
+                    var_then = visit(st, expr.then_clause, start_label, end_label)
                     instructions.append(ir.Copy(location=loc, src=var_then, dest=var_result))
                     instructions.append(ir.Jump(location=loc, label=l_end))
 
                     instructions.append(ir.Label(location=loc, name=l_else.name))
-                    var_else = visit(st, expr.else_clause)
+                    var_else = visit(st, expr.else_clause, start_label, end_label)
                     instructions.append(ir.Copy(location=loc, src=var_else, dest=var_result))
                     instructions.append(ir.Label(location=loc, name=l_end.name))
 
@@ -109,15 +109,15 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             
             case ast.BinaryComp():
                 if expr.op in ['==', '!=']:
-                    var_left = visit(st, expr.left)
-                    var_right = visit(st, expr.right)
+                    var_left = visit(st, expr.left, start_label, end_label)
+                    var_right = visit(st, expr.right, start_label, end_label)
                     var_result = new_var(Bool)
                     instructions.append(ir.Call(location=loc, fun=ir.IRVar(expr.op), args=[var_left, var_right], dest=var_result))
                     return var_result
 
                 var_op = root_symtab.locals[expr.op]
-                var_left = visit(st, expr.left)
-                var_right = visit(st, expr.right)
+                var_left = visit(st, expr.left, start_label, end_label)
+                var_right = visit(st, expr.right, start_label, end_label)
                 var_result = new_var(Bool)
                 instructions.append(ir.Call(location=loc, fun=var_op, args=[var_left, var_right], dest=var_result))
                 return var_result
@@ -127,14 +127,14 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                 l_skip = new_label()
                 l_end = new_label()
 
-                var_left = visit(st, expr.left)
+                var_left = visit(st, expr.left, start_label, end_label)
                 var_result = new_var(Bool)
 
                 if expr.op == "and":
                     instructions.append(ir.CondJump(location=loc, cond=var_left, then_label=l_right, else_label=l_skip))
 
                     instructions.append(ir.Label(location=loc, name=l_right.name))
-                    var_right = visit(st, expr.right)
+                    var_right = visit(st, expr.right, start_label, end_label)
                     instructions.append(ir.Copy(location=loc, src=var_right, dest=var_result))
                     instructions.append(ir.Jump(location=loc, label=l_end))
 
@@ -146,7 +146,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                     instructions.append(ir.CondJump(location=loc, cond=var_left, then_label=l_skip, else_label=l_right))
 
                     instructions.append(ir.Label(location=loc, name=l_right.name))
-                    var_right = visit(st, expr.right)
+                    var_right = visit(st, expr.right, start_label, end_label)
                     instructions.append(ir.Copy(location=loc, src=var_right, dest=var_result))
                     instructions.append(ir.Jump(location=loc, label=l_end))
 
@@ -160,7 +160,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             
             case ast.Function():
                 fun = root_symtab.locals[expr.name]
-                args = [visit(st, arg) for arg in expr.arguments]
+                args = [visit(st, arg, start_label, end_label) for arg in expr.arguments]
                 dest = new_var(expr.type)
                 instructions.append(ir.Call(location=loc, fun=fun, args=args, dest=dest))
 
@@ -172,11 +172,11 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                 l_end = new_label()
 
                 instructions.append(ir.Label(location=loc, name=l_start.name))
-                var_cond = visit(st, expr.condition)
+                var_cond = visit(st, expr.condition, start_label, end_label)
                 instructions.append(ir.CondJump(location=loc, cond=var_cond, then_label=l_body, else_label=l_end))
 
                 instructions.append(ir.Label(location=loc, name=l_body.name))
-                visit(st, expr.do_clause)
+                visit(st, expr.do_clause, start_label=l_start, end_label=l_end)
                 instructions.append(ir.Jump(location=loc, label=l_start))
 
                 instructions.append(ir.Label(location=loc, name=l_end.name))
@@ -187,7 +187,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                 if expr.ident.name in st.locals:
                     raise Exception(f'Variable already defined in this scope: {expr.ident.name}')
                 var = new_var(expr.value.type)
-                value = visit(st, expr.value)
+                value = visit(st, expr.value, start_label, end_label)
                 instructions.append(ir.Copy(location=loc, src=value, dest=var))
                 st.locals[expr.ident.name] = var
                 return var_unit
@@ -195,8 +195,8 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             case ast.Block():
                 new_st = SymTab(locals={}, parent=st)
                 for expression in expr.expressions:
-                    visit(new_st, expression)
-                return visit(new_st, expr.result)
+                    visit(new_st, expression, start_label, end_label)
+                return visit(new_st, expr.result, start_label, end_label)
             
             case ast.Assignement():
                 if isinstance(expr.left, ast.Identifier):
@@ -210,7 +210,7 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                         current_scope = current_scope.parent
                     if v is None:
                         raise Exception(f'Unknown variable: {expr.left.name}')
-                    value = visit(st, expr.right)
+                    value = visit(st, expr.right, start_label, end_label)
                     instructions.append(ir.Copy(location=loc, src=value, dest=var))
                     return value
                 else:
@@ -218,10 +218,22 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
             
             case ast.UnaryOp():
                 var_op = root_symtab.locals['unary_' + expr.op]
-                var_operand = visit(st, expr.operand)
+                var_operand = visit(st, expr.operand, start_label, end_label)
                 var_result = new_var(expr.type)
                 instructions.append(ir.Call(location=loc, fun=var_op, args=[var_operand], dest=var_result))
                 return var_result
+            
+            case ast.Break():
+                if end_label is None:
+                    raise Exception(f'Break outside of loop')
+                instructions.append(ir.Jump(location=loc, label=end_label))
+                return var_unit
+            
+            case ast.Continue():
+                if start_label is None:
+                    raise Exception(f'Continue outside of loop')
+                instructions.append(ir.Jump(location=loc, label=start_label))
+                return var_unit
 
             case _:
                 raise Exception(f'Invalid expression: {type(expr)}')
