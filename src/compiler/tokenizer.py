@@ -139,7 +139,7 @@ def tokenize(source_code: str) -> list[Token]:
             continue
 
         raise Exception(
-            f"Tokenization failure near {line}:{column} - {source_code[pos:(pos + 10)]}..."
+            f"Tokenization failure near {line}:{column} - {source_code[pos : (pos + 10)]}..."
         )
 
     return tokens

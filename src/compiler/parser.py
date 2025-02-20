@@ -65,7 +65,12 @@ def parse(tokens: list[Token]) -> ast.Module:
         return ast.Literal(value=False, location=token.loc)
 
     def parse_expression() -> ast.Expression:
-        nonlocal depth, prev_block, if_ends_in_block, while_ends_in_block, var_ends_in_block
+        nonlocal \
+            depth, \
+            prev_block, \
+            if_ends_in_block, \
+            while_ends_in_block, \
+            var_ends_in_block
         depth += 1
         left = parse_or()
 
@@ -249,7 +254,12 @@ def parse(tokens: list[Token]) -> ast.Module:
         )
 
     def parse_if_expression() -> ast.Expression:
-        nonlocal in_then_expr, in_else_expr, if_then_block, if_else_block, if_ends_in_block
+        nonlocal \
+            in_then_expr, \
+            in_else_expr, \
+            if_then_block, \
+            if_else_block, \
+            if_ends_in_block
         consume("if")
         condition = parse_expression()
 
@@ -295,7 +305,13 @@ def parse(tokens: list[Token]) -> ast.Module:
         return ast.Function(name=ident.name, arguments=args, location=ident.location)
 
     def parse_block() -> ast.Block:
-        nonlocal depth, prev_block, in_then_expr, in_else_expr, if_then_block, if_else_block
+        nonlocal \
+            depth, \
+            prev_block, \
+            in_then_expr, \
+            in_else_expr, \
+            if_then_block, \
+            if_else_block
         if in_then_expr:
             if_then_block = True
         if in_else_expr:

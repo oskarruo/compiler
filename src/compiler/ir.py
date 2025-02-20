@@ -18,7 +18,7 @@ class Instruction:
     def __str__(self) -> str:
         def format_value(v: Any) -> str:
             if isinstance(v, list):
-                return f'[{", ".join(format_value(e) for e in v)}]'
+                return f"[{', '.join(format_value(e) for e in v)}]"
             else:
                 return str(v)
 
