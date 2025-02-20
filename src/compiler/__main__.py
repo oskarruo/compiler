@@ -12,6 +12,7 @@ from compiler.ir_generator import generate_ir
 from compiler.assembly_generator import generate_assembly
 from compiler.assembler import assemble_and_get_executable
 
+
 def call_compiler(source_code: str, input_file_name: str) -> bytes:
     tokens = tokenize(source_code)
     ast_node = parse(tokens)
@@ -19,6 +20,7 @@ def call_compiler(source_code: str, input_file_name: str) -> bytes:
     ir = generate_ir(ast_node)
     asm_code = generate_assembly(ir)
     return assemble_and_get_executable(asm_code)
+
 
 def main() -> int:
     # === Option parsing ===
@@ -28,13 +30,13 @@ def main() -> int:
     host = "127.0.0.1"
     port = 3000
     for arg in sys.argv[1:]:
-        if (m := re.fullmatch(r'--output=(.+)', arg)) is not None:
+        if (m := re.fullmatch(r"--output=(.+)", arg)) is not None:
             output_file = m[1]
-        elif (m := re.fullmatch(r'--host=(.+)', arg)) is not None:
+        elif (m := re.fullmatch(r"--host=(.+)", arg)) is not None:
             host = m[1]
-        elif (m := re.fullmatch(r'--port=(.+)', arg)) is not None:
+        elif (m := re.fullmatch(r"--port=(.+)", arg)) is not None:
             port = int(m[1])
-        elif arg.startswith('-'):
+        elif arg.startswith("-"):
             raise Exception(f"Unknown argument: {arg}")
         elif command is None:
             command = arg
@@ -44,7 +46,7 @@ def main() -> int:
             raise Exception("Multiple input files not supported")
 
     if command is None:
-        print(f"Error: command argument missing", file=sys.stderr)
+        print("Error: command argument missing", file=sys.stderr)
         return 1
 
     def read_source_code() -> str:
@@ -56,19 +58,19 @@ def main() -> int:
 
     # === Command implementations ===
 
-    if command == 'compile':
+    if command == "compile":
         source_code = read_source_code()
         if output_file is None:
             raise Exception("Output file flag --output=... required")
-        executable = call_compiler(source_code, input_file or '(source code)')
-        with open(output_file, 'wb') as f:
+        executable = call_compiler(source_code, input_file or "(source code)")
+        with open(output_file, "wb") as f:
             f.write(executable)
-    elif command == 'ast':
+    elif command == "ast":
         source_code = read_source_code()
         tokens = tokenize(source_code)
         ast_node = parse(tokens)
         print(ast_node)
-    elif command == 'ir':
+    elif command == "ir":
         source_code = read_source_code()
         tokens = tokenize(source_code)
         ast_node = parse(tokens)
@@ -77,7 +79,7 @@ def main() -> int:
         for i in ir.values():
             for j in i:
                 print(j)
-    elif command == 'asm':
+    elif command == "asm":
         source_code = read_source_code()
         tokens = tokenize(source_code)
         ast_node = parse(tokens)
@@ -85,7 +87,7 @@ def main() -> int:
         ir = generate_ir(ast_node)
         asm_code = generate_assembly(ir)
         print(asm_code)
-    elif command == 'serve':
+    elif command == "serve":
         try:
             run_server(host, port)
         except KeyboardInterrupt:
@@ -114,7 +116,7 @@ def run_server(host: str, port: int) -> None:
                 elif input["command"] == "ping":
                     pass
                 else:
-                    result["error"] = "Unknown command: " + input['command']
+                    result["error"] = "Unknown command: " + input["command"]
             except Exception as e:
                 result["error"] = "".join(format_exception(e))
             result_str = json.dumps(result)
@@ -125,5 +127,5 @@ def run_server(host: str, port: int) -> None:
         server.serve_forever()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

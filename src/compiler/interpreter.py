@@ -5,41 +5,50 @@ from compiler import ast
 
 Value = int | bool | Callable | None
 
+
 class BreakExpection(Exception):
     pass
+
 
 class ContinueExpection(Exception):
     pass
 
+
 class ReturnException(Exception):
     def __init__(self, value: Value) -> None:
         self.value = value
+
 
 @dataclass
 class SymTab:
     locals: dict
     parent: SymTab | None
 
+
 def top_level_symtab() -> SymTab:
-    return SymTab(locals={
-        '+': lambda a, b: a + b,
-        '-': lambda a, b: a - b,
-        '<': lambda a, b: a < b,
-        '>': lambda a, b: a > b,
-        '<=': lambda a, b: a <= b,
-        '>=': lambda a, b: a >= b,
-        '==': lambda a, b: a == b,
-        '!=': lambda a, b: a != b,
-        '*': lambda a, b: a * b,
-        '/': lambda a, b: a // b,
-        '%': lambda a, b: a % b,
-        'unary_-': lambda a: -a,
-        'unary_not': lambda a: not a
-    }, parent=None)
+    return SymTab(
+        locals={
+            "+": lambda a, b: a + b,
+            "-": lambda a, b: a - b,
+            "<": lambda a, b: a < b,
+            ">": lambda a, b: a > b,
+            "<=": lambda a, b: a <= b,
+            ">=": lambda a, b: a >= b,
+            "==": lambda a, b: a == b,
+            "!=": lambda a, b: a != b,
+            "*": lambda a, b: a * b,
+            "/": lambda a, b: a // b,
+            "%": lambda a, b: a % b,
+            "unary_-": lambda a: -a,
+            "unary_not": lambda a: not a,
+        },
+        parent=None,
+    )
+
 
 def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> Value:
     table = tbl if tbl is not None else top_level_symtab()
-    
+
     match node:
         case ast.Literal():
             return node.value
@@ -47,7 +56,7 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
         case ast.BinaryOp():
             a: Any = interpret(node=node.left, tbl=table)
             b: Any = interpret(node=node.right, tbl=table)
-            
+
             current_table = table
             while current_table.parent is not None:
                 current_table = current_table.parent
@@ -59,7 +68,7 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
         case ast.BinaryComp():
             c: Any = interpret(node=node.left, tbl=table)
             d: Any = interpret(node=node.right, tbl=table)
-            
+
             current_table = table
             while current_table.parent is not None:
                 current_table = current_table.parent
@@ -67,18 +76,18 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
                 return current_table.locals[node.op](c, d)
             else:
                 raise Exception(f"Unknown operator: {node.op}")
-            
+
         case ast.BinaryLogical():
             e: Any = interpret(node=node.left, tbl=table)
-            
-            if node.op == 'and':
+
+            if node.op == "and":
                 if not e:
                     return False
                 f: Any = interpret(node=node.right, tbl=table)
                 if f:
                     return True
                 return False
-            elif node.op == 'or':
+            elif node.op == "or":
                 if e:
                     return True
                 g: Any = interpret(node=node.right, tbl=table)
@@ -87,15 +96,15 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
                 return False
             else:
                 raise Exception(f"Unknown operator: {node.op}")
-        
+
         case ast.UnaryOp():
             h: Any = interpret(node=node.operand, tbl=table)
 
             current_table = table
             while current_table.parent is not None:
                 current_table = current_table.parent
-            if 'unary_' + node.op in current_table.locals:
-                return current_table.locals['unary_' + node.op](h)
+            if "unary_" + node.op in current_table.locals:
+                return current_table.locals["unary_" + node.op](h)
             else:
                 raise Exception(f"Unknown operator: {node.op}")
 
@@ -112,15 +121,15 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
 
         case ast.Function():
             match node.name:
-                case 'print_int':
+                case "print_int":
                     arg_value = interpret(node=node.arguments[0], tbl=table)
                     print(arg_value)
                     return None
-                case 'print_bool':
+                case "print_bool":
                     arg_value = interpret(node=node.arguments[0], tbl=table)
                     print(arg_value)
                     return None
-                case 'read_int':
+                case "read_int":
                     return int(input())
                 case _:
                     current_scop: SymTab | None = table
@@ -129,7 +138,9 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
                             function = current_scop.locals[node.name]
                             new_table = SymTab(locals={}, parent=current_scop)
                             for arg, param in zip(node.arguments, function.params):
-                                new_table.locals[param.name] = interpret(node=arg, tbl=table)
+                                new_table.locals[param.name] = interpret(
+                                    node=arg, tbl=table
+                                )
                             try:
                                 interpret(node=function.body, tbl=new_table)
                                 return None
@@ -145,18 +156,18 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
                     return current_scope.locals[node.name]
                 current_scope = current_scope.parent
             raise Exception(f"Unknown variable: {node.name}")
-        
+
         case ast.Variable():
             value = interpret(node=node.value, tbl=table)
             table.locals[node.ident.name] = value
             return value
-        
+
         case ast.Block():
             new_table = SymTab(locals={}, parent=table)
             for expr in node.expressions:
                 interpret(node=expr, tbl=new_table)
             return interpret(node.result, tbl=new_table)
-        
+
         case ast.Assignement():
             if isinstance(node.left, ast.Identifier):
                 value = interpret(node=node.right, tbl=table)
@@ -168,8 +179,8 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
                     current_sco = current_sco.parent
                 raise Exception(f"Unknown variable: {node.left.name}")
             else:
-                raise Exception(f"Left side of assignment must be an identifier")
-        
+                raise Exception("Left side of assignment must be an identifier")
+
         case ast.While():
             while interpret(node=node.condition, tbl=table):
                 try:
@@ -182,14 +193,14 @@ def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> V
 
         case ast.Break():
             raise BreakExpection()
-        
+
         case ast.Continue():
             raise ContinueExpection()
 
         case ast.ReturnExpression():
             value = interpret(node=node.value, tbl=table)
             raise ReturnException(value)
-        
+
         case ast.Module():
             for function in node.funs:
                 table.locals[function.name] = function

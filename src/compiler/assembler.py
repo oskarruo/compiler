@@ -1,19 +1,18 @@
 import subprocess
 import tempfile
-from contextlib import nullcontext
 from os import path
-from typing import Any, Callable, ContextManager, TypeVar
+from typing import Callable, TypeVar
 import shutil
 from pathlib import Path
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def assemble(
     assembly_code: str,
     output_file: str,
     workdir: str | None = None,
-    tempfile_basename: str = 'program',
+    tempfile_basename: str = "program",
     link_with_c: bool = False,
     extra_libraries: list[str] = [],
 ) -> None:
@@ -27,14 +26,14 @@ def assemble(
         tempfile_basename=tempfile_basename,
         link_with_c=link_with_c,
         extra_libraries=extra_libraries,
-        take_output=lambda f: shutil.move(f, output_file)
+        take_output=lambda f: shutil.move(f, output_file),
     )
 
 
 def assemble_and_get_executable(
     assembly_code: str,
     workdir: str | None = None,
-    tempfile_basename: str = 'program',
+    tempfile_basename: str = "program",
     link_with_c: bool = False,
     extra_libraries: list[str] = [],
 ) -> bytes:
@@ -48,7 +47,7 @@ def assemble_and_get_executable(
         tempfile_basename=tempfile_basename,
         link_with_c=link_with_c,
         extra_libraries=extra_libraries,
-        take_output=lambda f: Path(f).read_bytes()
+        take_output=lambda f: Path(f).read_bytes(),
     )
 
 
@@ -62,10 +61,24 @@ def _assemble(
 ) -> T:
     if workdir is not None:
         wd = Path(workdir).absolute().as_posix()
-        return _assemble_impl(assembly_code, wd, tempfile_basename, link_with_c, extra_libraries, take_output)
+        return _assemble_impl(
+            assembly_code,
+            wd,
+            tempfile_basename,
+            link_with_c,
+            extra_libraries,
+            take_output,
+        )
     else:
-        with tempfile.TemporaryDirectory(prefix='compiler_') as wd:
-            return _assemble_impl(assembly_code, wd, tempfile_basename, link_with_c, extra_libraries, take_output)
+        with tempfile.TemporaryDirectory(prefix="compiler_") as wd:
+            return _assemble_impl(
+                assembly_code,
+                wd,
+                tempfile_basename,
+                link_with_c,
+                extra_libraries,
+                take_output,
+            )
 
 
 def _assemble_impl(
@@ -76,41 +89,43 @@ def _assemble_impl(
     extra_libraries: list[str],
     take_output: Callable[[str], T],
 ) -> T:
-    stdlib_asm = path.join(workdir, 'stdlib.s')
-    stdlib_obj = path.join(workdir, 'stdlib.o')
-    program_asm = path.join(workdir, f'{tempfile_basename}.s')
-    program_obj = path.join(workdir, f'{tempfile_basename}.o')
-    output_file = path.join(workdir, 'a.out')
+    stdlib_asm = path.join(workdir, "stdlib.s")
+    stdlib_obj = path.join(workdir, "stdlib.o")
+    program_asm = path.join(workdir, f"{tempfile_basename}.s")
+    program_obj = path.join(workdir, f"{tempfile_basename}.o")
+    output_file = path.join(workdir, "a.out")
 
     if link_with_c:
         final_stdlib_asm_code = drop_start_symbol(stdlib_asm_code)
     else:
         final_stdlib_asm_code = stdlib_asm_code
 
-    with open(stdlib_asm, 'w') as f:
+    with open(stdlib_asm, "w") as f:
         f.write(final_stdlib_asm_code)
-    with open(program_asm, 'w') as f:
+    with open(program_asm, "w") as f:
         f.write(assembly_code)
-    subprocess.run(['as', '-g', '-o' +
-                    stdlib_obj, stdlib_asm], check=True)
-    subprocess.run(['as', '-g', '-o' +
-                    program_obj, program_asm], check=True)
-    linker_flags = ['-static', *[f'-l{lib}' for lib in extra_libraries]]
+    subprocess.run(["as", "-g", "-o" + stdlib_obj, stdlib_asm], check=True)
+    subprocess.run(["as", "-g", "-o" + program_obj, program_asm], check=True)
+    linker_flags = ["-static", *[f"-l{lib}" for lib in extra_libraries]]
     if link_with_c:
         # Linking with the C standard library correctly is complicated,
         # as evidenced by the complicated linker command shown by `cc -v something.c`.
         # Instead of trying to build the right `ld` command ourselves, we use the C compiler
         # to do the linking.
         subprocess.run(
-            ['cc', '-o' + output_file, *linker_flags, stdlib_obj, program_obj], check=True)
+            ["cc", "-o" + output_file, *linker_flags, stdlib_obj, program_obj],
+            check=True,
+        )
     else:
         subprocess.run(
-            ['ld', '-o' + output_file, *linker_flags, stdlib_obj, program_obj], check=True)
+            ["ld", "-o" + output_file, *linker_flags, stdlib_obj, program_obj],
+            check=True,
+        )
     return take_output(output_file)
 
 
 def drop_start_symbol(code: str) -> str:
-    return code.split('# BEGIN START')[0] + code.split('# END START')[1]
+    return code.split("# BEGIN START")[0] + code.split("# END START")[1]
 
 
 # WARNING: if you want to copy this into a separate file,
@@ -256,7 +271,7 @@ print_bool:
     # rsi = pointer to message (already set above)
     # rdx = number of bytes (already set above)
     syscall
-    
+
     # Restore stack registers and return the original input
     movq %rbp, %rsp
     popq %rbp
