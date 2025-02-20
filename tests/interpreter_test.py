@@ -81,3 +81,8 @@ def test_interpreter_break() -> None:
 def test_interpreter_continue() -> None:
     assert interpret(node=parse(tokenize("var x = 0; while x < 3 do { x = x + 2; if x == 2 then continue; x = x + 1;} x"))) == 5
     return None
+
+def test_interpreter_function_def() -> None:
+    assert interpret(node=parse(tokenize('fun square(x: Int): Int { return x * x; } square(2)'))) == 4
+    assert interpret(node=parse(tokenize('fun add(x: Int, y: Int): Unit { x + y } add(2, 3)'))) == None
+    return None

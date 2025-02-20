@@ -77,3 +77,26 @@ class Break(Expression):
 @dataclass
 class Continue(Expression):
     pass
+
+@dataclass
+class ReturnExpression(Expression):
+    value: Expression
+
+@dataclass
+class FunDefArg:
+    name: str
+    type: Identifier
+
+@dataclass
+class FunDef:
+    location: Location | L
+    name: str
+    params: list[FunDefArg]
+    return_type: Identifier
+    body: Expression
+
+@dataclass
+class Module:
+    funs: list[FunDef]
+    body: Expression
+    type: Type = field(kw_only=True, default=Unit)

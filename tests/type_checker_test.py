@@ -134,3 +134,16 @@ def test_type_checker_break_continue() -> None:
     assert typecheck(parse(tokenize("continue"))) == Unit
 
     return None
+
+def test_type_checker_function_def() -> None:
+    with pytest.raises(Exception, match=re.escape("Invalid type for argument: BasicType(name='Bool')")):
+        typecheck(parse(tokenize("fun square(x: Int): Int { return x * x; } square(true);")))
+    
+    assert typecheck(parse(tokenize("fun square(x: Int): Int { return x * x; } square(42)"))) == Int
+
+    with pytest.raises(Exception, match=re.escape("Invalid return type")):
+        typecheck(parse(tokenize("fun f(x: Int): Bool { return x + x; } f(3);")))
+    
+    assert typecheck(parse(tokenize('fun f(x: Int): Int { return g(x + 1); } fun g(x: Int): Int { return x } f(1) * 100'))) == Int
+
+    return None

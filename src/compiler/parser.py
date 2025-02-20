@@ -1,7 +1,7 @@
 from compiler import ast
 from compiler.tokenizer import Token, L
 
-def parse(tokens: list[Token]) -> ast.Expression:
+def parse(tokens: list[Token]) -> ast.Module:
     if len(tokens) == 0:
         raise Exception(f'Parsing error: empty input tokens')
 
@@ -185,6 +185,8 @@ def parse(tokens: list[Token]) -> ast.Expression:
     def parse_factor() -> ast.Expression:
         if peek().text == '(':
             return parse_parenthesized()
+        elif peek().text == 'return':
+            return parse_return_expression()
         elif peek().text == 'var':
             return parse_variable()
         elif peek().text == 'if':
@@ -208,6 +210,11 @@ def parse(tokens: list[Token]) -> ast.Expression:
             return parse_block()
         else:
             raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}')
+    
+    def parse_return_expression() -> ast.ReturnExpression:
+        consume('return')
+        expression = parse_expression()
+        return ast.ReturnExpression(value=expression, location=expression.location)
     
     def parse_break() -> ast.Break:
         token = consume('break')
@@ -325,7 +332,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
         return ast.While(condition=condition, do_clause=do_clause, location=condition.location)
     
     def parse_top_level() -> ast.Expression:
-        block = False
         expressions = []
         res: ast.Expression = ast.Literal(value=None, location=L())
         while pos < len(tokens):
@@ -334,7 +340,6 @@ def parse(tokens: list[Token]) -> ast.Expression:
             if peek().text == ';':
                 consume(';')
                 last_result = False
-                block = True
             if peek().type == 'end':
                 break
             expressions.append(exp)
@@ -344,15 +349,39 @@ def parse(tokens: list[Token]) -> ast.Expression:
         else:
             expressions.append(exp)
 
-        if len(expressions) == 1 and res == ast.Literal(value=None, location=L()) and not block:
-            return expressions[0]
-        elif len(expressions) == 0 and not block:
-            return res
-        else:
-            loc = expressions[0].location if expressions else peek().loc
-            return ast.Block(expressions=expressions, result=res, location=loc)
+        loc = expressions[0].location if expressions else res.location
+        return ast.Block(expressions=expressions, result=res, location=loc)
 
-    result = parse_top_level()
+    def parse_function_def() -> ast.FunDef:
+        consume('fun')
+        ident = parse_identifier()
+        args = []
+        consume('(')
+        while peek().text != ')':
+            var_ident = parse_identifier()
+            consume(':')
+            var_type = parse_identifier()
+            args.append(ast.FunDefArg(name=var_ident.name, type=var_type))
+            
+            if peek().text == ',':
+                consume(',')
+                if peek().text == ')':
+                    raise Exception(f'Parsing error at {peek().loc.line}:{peek().loc.column}: expected an argument')
+        consume(')')
+        consume(':')
+        type = parse_identifier()
+        body = parse_expression()
+        return ast.FunDef(ident.location, ident.name, args, type, body)
+    
+    def parse_top_module() -> ast.Module:
+        functions = []
+        while peek().text == 'fun':
+            fun = parse_function_def()
+            functions.append(fun)
+        top_expr = parse_top_level()
+        return ast.Module(functions, top_expr)
+
+    result = parse_top_module()
 
     if pos != len(tokens):
         remaining = tokens[pos:]

@@ -9,7 +9,7 @@ class SymTab:
     locals: dict
     parent: SymTab | None
 
-def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
+def generate_ir(root_node: ast.Module) -> dict[str, list[ir.Instruction]]:
     root_types = {ir.IRVar(name): typ for name, typ in functions.items()}
     
     var_types: dict[ir.IRVar, Type] = dict(root_types)
@@ -34,6 +34,8 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
         return label
     
     instructions: list[ir.Instruction] = []
+
+    funcs: dict[str, list[ir.Instruction]] = {}
     
     def visit(st: SymTab, expr: ast.Expression, start_label: ir.Label | None = None, end_label: ir.Label | None = None) -> ir.IRVar:
         loc = expr.location
@@ -49,7 +51,6 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                         instructions.append(ir.LoadIntConst(location=loc, value=expr.value, dest=var))
                     case None:
                         var = new_var(Unit)
-                        instructions.append(ir.Copy(location=loc, src=var_unit, dest=var))
                     case _:
                         raise Exception(f'Invalid literal: {type(expr.value)}')
                 
@@ -234,6 +235,11 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
                     raise Exception(f'Continue outside of loop')
                 instructions.append(ir.Jump(location=loc, label=start_label))
                 return var_unit
+            
+            case ast.ReturnExpression():
+                var_result = visit(st, expr.value, start_label, end_label)
+                instructions.append(ir.Return(location=loc, value=var_result))
+                return var_unit
 
             case _:
                 raise Exception(f'Invalid expression: {type(expr)}')
@@ -242,13 +248,31 @@ def generate_ir(root_node: ast.Expression) -> list[ir.Instruction]:
     for v in root_types.keys():
         root_symtab.locals[v.name] = v
 
+    for fun in root_node.funs:
+        args = []
+        for arg in fun.params:
+            args.append(arg.name)
+        instructions.append(ir.Label(location=None, name='start'))
+        fun_symtab = SymTab(locals={}, parent=root_symtab)
+        for arg in fun.params:
+            var = ir.IRVar(arg.name)
+            var_types[var] = arg.type.type
+            fun_symtab.locals[arg.name] = var
+        visit(fun_symtab, fun.body)
+        if instructions[-1].__class__ != ir.Return:
+            instructions.append(ir.Return(location=None, value=var_unit))
+        funcs[f'{fun.name}({str(args)})'] = instructions
+        instructions = []
+
     instructions.append(ir.Label(location=None, name='start'))
     
-    var_final_result = visit(SymTab(locals={}, parent=root_symtab), root_node)
+    var_final_result = visit(SymTab(locals={}, parent=root_symtab), root_node.body)
 
     if var_types[var_final_result] == Int:
         instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_int'], args=[var_final_result], dest=new_var(Unit)))
     elif var_types[var_final_result] == Bool:
         instructions.append(ir.Call(location=None, fun=root_symtab.locals['print_bool'], args=[var_final_result], dest=new_var(Unit)))
 
-    return instructions
+    funcs['main'] = instructions
+
+    return funcs

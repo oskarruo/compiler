@@ -33,7 +33,7 @@ class SymTab:
     locals: dict
     parent: SymTab | None
 
-def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
+def typecheck(node: ast.Expression | ast.Module, symtab: SymTab | None = None, funct: str = 'main') -> Type:
     if symtab is None:
         symtab = SymTab(locals={}, parent=SymTab(locals={}, parent=None))
 
@@ -67,7 +67,7 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
         
         case ast.Variable():
             name = node.ident.name
-            a: Type = typecheck(node=node.value, symtab=symtab)
+            a: Type = typecheck(node=node.value, symtab=symtab, funct=funct)
 
             if node.type_declaration:
                 if node.type_declaration.name in types:
@@ -86,7 +86,7 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
                 raise Exception(f"Left side of assignement must be an identifier")
 
             name = node.left.name
-            c: Type = typecheck(node=node.right, symtab=symtab)
+            c: Type = typecheck(node=node.right, symtab=symtab, funct=funct)
 
             v = False
             current_scope = symtab
@@ -108,8 +108,8 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
             func = functions[node.op]
             if func is None:
                 raise Exception(f"Unknown operator: {node.op}")
-            e: Type = typecheck(node=node.left, symtab=symtab)
-            f: Type = typecheck(node=node.right, symtab=symtab)
+            e: Type = typecheck(node=node.left, symtab=symtab, funct=funct)
+            f: Type = typecheck(node=node.right, symtab=symtab, funct=funct)
             if (e, f) == (func.params_type[0], func.params_type[1]):
                 node.type = func.return_type
             else:
@@ -117,8 +117,8 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
 
         case ast.BinaryComp():
             if node.op == '==' or node.op == '!=':
-                g: Type = typecheck(node=node.left, symtab=symtab)
-                h: Type = typecheck(node=node.right, symtab=symtab)
+                g: Type = typecheck(node=node.left, symtab=symtab, funct=funct)
+                h: Type = typecheck(node=node.right, symtab=symtab, funct=funct)
                 if g == h:
                     node.type = Bool
                 else:
@@ -127,8 +127,8 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
                 func = functions[node.op]
                 if func is None:
                     raise Exception(f"Unknown operator: {node.op}")
-                i: Type = typecheck(node=node.left, symtab=symtab)
-                j: Type = typecheck(node=node.right, symtab=symtab)
+                i: Type = typecheck(node=node.left, symtab=symtab, funct=funct)
+                j: Type = typecheck(node=node.right, symtab=symtab, funct=funct)
                 if (i, j) == (func.params_type[0], func.params_type[1]):
                     node.type = func.return_type
                 else:
@@ -138,23 +138,23 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
             func = functions[node.op]
             if func is None:
                 raise Exception(f"Unknown operator: {node.op}")
-            k: Type = typecheck(node=node.left, symtab=symtab)
-            l: Type = typecheck(node=node.right, symtab=symtab)
+            k: Type = typecheck(node=node.left, symtab=symtab, funct=funct)
+            l: Type = typecheck(node=node.right, symtab=symtab, funct=funct)
             if (k, l) == (func.params_type[0], func.params_type[1]):
                 node.type = func.return_type
             else:
                 raise Exception(f"Invalid types for operator {node.op}: {k}, {l}")
             
         case ast.IfExpression():
-            condition = typecheck(node=node.condition, symtab=symtab)
+            condition = typecheck(node=node.condition, symtab=symtab, funct=funct)
             if condition != Bool:
                 raise Exception(f"Invalid type for condition: {condition}")
-            then_clause = typecheck(node=node.then_clause, symtab=symtab)
+            then_clause = typecheck(node=node.then_clause, symtab=symtab, funct=funct)
             
             if node.else_clause is None:
                 node.type = Unit
             else:
-                else_clause = typecheck(node=node.else_clause, symtab=symtab)
+                else_clause = typecheck(node=node.else_clause, symtab=symtab, funct=funct)
 
                 if then_clause == else_clause:
                     node.type = then_clause
@@ -165,7 +165,7 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
             func = functions['unary_' + node.op]
             if func is None:
                 raise Exception(f"Unknown operator: {node.op}")
-            m: Type = typecheck(node=node.operand, symtab=symtab)
+            m: Type = typecheck(node=node.operand, symtab=symtab, funct=funct)
             if m == func.params_type[0]:
                 node.type = func.return_type
             else:
@@ -174,24 +174,24 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
         case ast.Block():
             new_symtab = SymTab(locals={}, parent=symtab)
             for expression in node.expressions:
-                typecheck(node=expression, symtab=new_symtab)
-            node.type = typecheck(node=node.result, symtab=new_symtab)
+                typecheck(node=expression, symtab=new_symtab, funct=funct)
+            node.type = typecheck(node=node.result, symtab=new_symtab, funct=funct)
         
         case ast.Function():
             func = functions[node.name]
             if func is None:
                 raise Exception(f"Unknown function: {node.name}")
             for arg in node.arguments:
-                n: Type = typecheck(node=arg, symtab=symtab)
+                n: Type = typecheck(node=arg, symtab=symtab, funct=funct)
                 if n != func.params_type[0]:
                     raise Exception(f"Invalid type for argument: {n}")
             node.type = func.return_type
         
         case ast.While():
-            condition = typecheck(node.condition, symtab=symtab)
+            condition = typecheck(node=node.condition, symtab=symtab, funct=funct)
             if condition != Bool:
                 raise Exception(f"Invalid type for condition: {condition}")
-            typecheck(node=node.do_clause, symtab=symtab)
+            typecheck(node=node.do_clause, symtab=symtab, funct=funct)
             node.type = Unit
         
         case ast.Break():
@@ -200,7 +200,30 @@ def typecheck(node: ast.Expression, symtab: SymTab | None = None) -> Type:
         case ast.Continue():
             node.type = Unit
         
+        case ast.ReturnExpression():
+            o: Type = typecheck(node=node.value, symtab=symtab, funct=funct)
+            if o != functions[funct].return_type:
+                raise Exception(f"Invalid return type: {o}")
+            node.type = o
+        
+        case ast.Module():
+            for fun in node.funs:
+                functions[fun.name] = FunType(params_type=[types[arg.type.name] for arg in fun.params], return_type=types[fun.return_type.name])
+            
+            for fun in node.funs:
+                typecheck_fundef(node=fun)
+
+            p: Type = typecheck(node=node.body, symtab=symtab, funct=funct)
+            node.type = p
+        
         case _:
             raise Exception(f"Unknown node type: {node}")
 
     return node.type
+
+def typecheck_fundef(node: ast.FunDef) -> None:
+    symtab = SymTab(locals={}, parent=SymTab(locals={}, parent=None))
+    for arg in node.params:
+        symtab.locals[arg.name] = types[arg.type.name]
+    typecheck(node=node.body, symtab=symtab, funct=node.name)
+    return None

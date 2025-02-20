@@ -63,13 +63,20 @@ def main() -> int:
         executable = call_compiler(source_code, input_file or '(source code)')
         with open(output_file, 'wb') as f:
             f.write(executable)
+    elif command == 'ast':
+        source_code = read_source_code()
+        tokens = tokenize(source_code)
+        ast_node = parse(tokens)
+        print(ast_node)
     elif command == 'ir':
         source_code = read_source_code()
         tokens = tokenize(source_code)
         ast_node = parse(tokens)
         typecheck(ast_node)
         ir = generate_ir(ast_node)
-        print("\n".join(str(i) for i in ir))
+        for i in ir.values():
+            for j in i:
+                print(j)
     elif command == 'asm':
         source_code = read_source_code()
         tokens = tokenize(source_code)

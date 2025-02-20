@@ -60,3 +60,7 @@ class CondJump(Instruction):
     cond: IRVar
     then_label: Label
     else_label: Label
+
+@dataclass(frozen=True)
+class Return(Instruction):
+    value: IRVar

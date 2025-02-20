@@ -11,6 +11,10 @@ class BreakExpection(Exception):
 class ContinueExpection(Exception):
     pass
 
+class ReturnException(Exception):
+    def __init__(self, value: Value) -> None:
+        self.value = value
+
 @dataclass
 class SymTab:
     locals: dict
@@ -33,7 +37,7 @@ def top_level_symtab() -> SymTab:
         'unary_not': lambda a: not a
     }, parent=None)
 
-def interpret(node: ast.Expression, tbl: SymTab | None = None) -> Value:
+def interpret(node: ast.Module | ast.Expression, tbl: SymTab | None = None) -> Value:
     table = tbl if tbl is not None else top_level_symtab()
     
     match node:
@@ -119,6 +123,19 @@ def interpret(node: ast.Expression, tbl: SymTab | None = None) -> Value:
                 case 'read_int':
                     return int(input())
                 case _:
+                    current_scop: SymTab | None = table
+                    while current_scop:
+                        if node.name in current_scop.locals:
+                            function = current_scop.locals[node.name]
+                            new_table = SymTab(locals={}, parent=current_scop)
+                            for arg, param in zip(node.arguments, function.params):
+                                new_table.locals[param.name] = interpret(node=arg, tbl=table)
+                            try:
+                                interpret(node=function.body, tbl=new_table)
+                                return None
+                            except ReturnException as e:
+                                return e.value
+                        current_scop = current_scop.parent
                     raise Exception(f"Unknown function: {node.name}")
 
         case ast.Identifier():
@@ -143,12 +160,12 @@ def interpret(node: ast.Expression, tbl: SymTab | None = None) -> Value:
         case ast.Assignement():
             if isinstance(node.left, ast.Identifier):
                 value = interpret(node=node.right, tbl=table)
-                current_scop: SymTab | None = table
-                while current_scop:
-                    if node.left.name in current_scop.locals:
-                        current_scop.locals[node.left.name] = value
+                current_sco: SymTab | None = table
+                while current_sco:
+                    if node.left.name in current_sco.locals:
+                        current_sco.locals[node.left.name] = value
                         return value
-                    current_scop = current_scop.parent
+                    current_sco = current_sco.parent
                 raise Exception(f"Unknown variable: {node.left.name}")
             else:
                 raise Exception(f"Left side of assignment must be an identifier")
@@ -168,6 +185,15 @@ def interpret(node: ast.Expression, tbl: SymTab | None = None) -> Value:
         
         case ast.Continue():
             raise ContinueExpection()
+
+        case ast.ReturnExpression():
+            value = interpret(node=node.value, tbl=table)
+            raise ReturnException(value)
+        
+        case ast.Module():
+            for function in node.funs:
+                table.locals[function.name] = function
+            return interpret(node=node.body, tbl=table)
 
         case _:
             raise Exception(f"Unknown node type: {type(node)}")
