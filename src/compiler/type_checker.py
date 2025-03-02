@@ -1,7 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from compiler import ast
 from compiler.types import Int, Bool, Unit, Type, FunType
+from compiler.symtab import SymTab
 
 functions = {
     "+": FunType(params_type=[Int, Int], return_type=Int),
@@ -23,12 +23,6 @@ functions = {
 }
 
 types = {"Int": Int, "Bool": Bool, "Unit": Unit}
-
-
-@dataclass
-class SymTab:
-    locals: dict
-    parent: SymTab | None
 
 
 def typecheck(

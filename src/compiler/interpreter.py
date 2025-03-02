@@ -1,7 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Any, Callable
 from compiler import ast
+from compiler.symtab import SymTab
 
 Value = int | bool | Callable | None
 
@@ -17,12 +17,6 @@ class ContinueExpection(Exception):
 class ReturnException(Exception):
     def __init__(self, value: Value) -> None:
         self.value = value
-
-
-@dataclass
-class SymTab:
-    locals: dict
-    parent: SymTab | None
 
 
 def top_level_symtab() -> SymTab:

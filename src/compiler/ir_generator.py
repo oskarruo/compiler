@@ -1,14 +1,8 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from compiler import ast, ir
 from compiler.types import Bool, Int, Type, Unit
 from compiler.type_checker import functions
-
-
-@dataclass
-class SymTab:
-    locals: dict
-    parent: SymTab | None
+from compiler.symtab import SymTab
 
 
 def generate_ir(root_node: ast.Module) -> dict[str, list[ir.Instruction]]:
